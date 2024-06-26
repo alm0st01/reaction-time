@@ -6,16 +6,16 @@ import pynput.keyboard as k
 import tkinter as tk
 from customtkinter import *
 
+import webbrowser
+
 app = CTk(fg_color="white")
 app.geometry("495x600")
 app.title("Reaction Time")
+app.resizable(0,0)
 
-running = False
-timer_on = False
-
-isOn = False
-
-stopwatch_amt = 0
+running = False  # This is true anytime between the start of the countdown and the end of the stopwatch
+isOn = False  # This is true anytime during the stopwatch thread
+jump_check = False  # Required to stop a runtime bug
 def round_rectangle(x1, y1, x2, y2, radius=25, **kwargs):
     points = [x1+radius, y1,
             x1+radius, y1,
@@ -53,47 +53,43 @@ def color_reset(arr: list):
 
 def jumpstart():
     global running
+    global jump_check
+
+    jump_check = True
     running = False
     txt.configure(text="JUMPSTART!")
 
+    time.sleep(0.45)  # Used to combat against possible runtime bugs
+    jump_check = False
 
 def stopwatch():
-    global stopwatch_amt
     global isOn
-    stopwatch_amt = 0
     start_time = time.time()
+
     while isOn:
         txt.configure(text=f'{time.time()-start_time:.3f}')
         time.sleep(0.001)
 
-    #while isOn:
-    #    stopwatch_amt += 0.01
-    #    #txt.configure(text='{0:.2g}'.format(stopwatch_amt))
-    #    txt.configure(text=f'{stopwatch_amt:.2f}')
-    #    time.sleep(0.01)
-
 
 def countdown():
+    global jump_check
     global isOn
     global running
-    global timer_on
     running = True
-    for i in range(1, 5, 1):
-        # print(i)
+    for i in range(1, 5, 1):  # There are multiple "if running and not jump_check" statements to stop for any jumpstarts
         if running:
             color_change(i, circle_r, "red")
             print(i)
             time.sleep(1)
-        else:
-            return
     if running:
         color_change(5, circle_r, "red")
+        print(5)
         if running:
             time.sleep(random.uniform(0.2, 3))
     if running:
         print("go!")
         color_reset(circle_r)
-        timer_on = True
+        jump_check = False
         isOn = True
         stopwatch_thread = threading.Thread(target=stopwatch)
         stopwatch_thread.start()
@@ -112,7 +108,7 @@ for i in range(1, 6, 1):
         # appending 2 regular circles per column
         circle_n.append(canvas.create_oval(35+95*(i-1), 54+49*(a-1), 80+95*(i-1), 99+49*(a-1), fill="#222222", outline="black"))
     for b in range(1, 3, 1):
-        # appending 2 changing circles per column
+        # appending 2 color-changing circles per column
         circle_r.append(canvas.create_oval(35+95*(i-1), 152+49*(b-1), 80+95*(i-1), 197+49*(b-1), fill="#222222", outline="black"))
 
 # 0,20,95,115,190,210,285,305,380,400
@@ -120,16 +116,21 @@ for i in range(1, 6, 1):
 # 95, 190, 285, 380
 
 txt = CTkLabel(app, text="",text_color="black", font=("Calibria",62))
-
 txt.place(x=247,y=300, anchor=CENTER)
+
+instr = CTkLabel(app, text="Press the spacebar to start, and press it again when all lights are off.", text_color="black", font=("Calibria",14))
+instr.place(x=247, y=25, anchor=CENTER)
+
 canvas.pack()
 
+gLabel = CTkLabel(app, text= "github.com/alm0st01",font=("Arial", 16,'underline'), text_color="black")
+gLabel.place(x=25,y=560)
+gLabel.bind("<Button-1>", lambda e: webbrowser.open_new("https://github.com/alm0st01"))
 
 def on_press(key):
     global running
-    global timer_on
     global isOn
-
+    global jump_check
     if str(key) == "Key.space":
         if running:
             if isOn:
@@ -139,15 +140,15 @@ def on_press(key):
             running = False
         else:
             txt.configure(text="0.000")
-            timer_on = False
             color_reset(circle_r)
             countdown_thread = threading.Thread(target=countdown)
             countdown_thread.start()
 
 
 def listen():
-    with k.Listener(on_press=on_press) as listener:
-        listener.join()
+    if not jump_check:
+        with k.Listener(on_press=on_press) as listener:
+            listener.join()
 
 
 listen_thread = threading.Thread(target=listen)
