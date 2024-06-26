@@ -2,7 +2,7 @@
 
 Simulates an F1 Start with the tkinter module.
 
-![reactiontimegif.gif](..%2F..%2FDownloads%2Freactiontimegif.gif)
+![reactiontime.gif](https://github.com/alm0st01/reaction-time/assets/59374423/54fae5c2-f40c-4936-b848-4df1d97987f5)
 
 ## How it Works
 
